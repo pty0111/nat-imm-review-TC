@@ -1,6 +1,0 @@
-Attaching SeuratObject
-Seurat v4 was just loaded with SeuratObject v5; disabling v5 assays and
-validation routines, and ensuring assays work in strict v3/v4
-compatibility mode
-Loading required package: Matrix
-slurmstepd: error: *** JOB 5399742 ON iscj014 CANCELLED AT 2025-04-30T13:45:35 ***
