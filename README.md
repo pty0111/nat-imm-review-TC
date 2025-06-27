@@ -8,11 +8,11 @@ The repo contains code for analyzing and integrating 9 publicly available scRNA-
 
 ## Setup
 
-Code in this repo requires R 4.2.3 and Python 3.8 as well as the following dependencies:\
-- Seurat v4.4.0\
-- dplyr\
-- ggplot2\
-- Scanpy v1.9.3\
+Code in this repo requires R 4.2.3 and Python 3.8 as well as the following dependencies:
+- Seurat v4.4.0
+- dplyr
+- ggplot2
+- Scanpy v1.9.3
 - Palantir v1.2
 
 ## Data availability
@@ -31,6 +31,4 @@ The datasets used in this repo are available at the following locations:
 | Gardner.A                | GSE273746                             | <https://doi.org/10.1084/jem.20250573>                                |
 | Gardner.E                | GSE285182                             | <https://doi.org/10.1084/jem.20250573>                                |
 
-### Gene Expression overlay (`gene-expr.ipynb`)
-
-Code for generating UMAP overlays of gene expression.
+The results of integration including Seurat R object is also available at [Box](https://mskcc.box.com/s/0z5mdy8e1zkmo4m5prj56hjcgse9l0ya).

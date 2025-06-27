@@ -1,3 +1,6 @@
+*.rds
+*.csv
+
 *.DS_Store
 # Data files
 *.rds
