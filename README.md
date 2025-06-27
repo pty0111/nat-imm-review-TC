@@ -4,7 +4,7 @@ This repository contains code for Figure 2 in the manuscript "Antigen-presenting
 
 ## Overview
 
-The repo contains code for analyzing and integrating 9 publicly available scRNA-seq datasets of ROR𝛾t^+^ APCs.
+The repo contains code for analyzing and integrating 9 publicly available scRNA-seq datasets of ROR𝛾t+ APCs.
 
 ## Setup
 
