@@ -1,4 +1,4 @@
-# MLN
+# MLN_RORgt_MHCII_multiome
 suppressPackageStartupMessages({
   library(ArchR)
   library(Seurat)
