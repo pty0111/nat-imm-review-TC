@@ -1,6 +1,8 @@
 *.rds
 *.csv
 
+.vscode/
+
 *.DS_Store
 # Data files
 *.rds
