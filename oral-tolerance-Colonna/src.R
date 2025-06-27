@@ -104,15 +104,6 @@ table(cell.discard)
 # 9816  4588 
 
 Idents(sro) <- sro$sample
-dir.create("plots/Seurat/QC", recursive = T)
-pdf("plots/Seurat/QC/violin-4I-sample-RNA-QC.pdf", width = 8, height = 6)
-plot.all.QC(sro, ident = "sample", thr = thr)
-dev.off()
-
-pdf("plots/Seurat/QC/violin-4I-HTO-RNA-QC.pdf", width = 15, height = 6)
-plot.all.QC(sro, ident = "Assignment", thr = thr)
-dev.off()
-
 # sro <- sro[, !cell.discard] # not run here
 write.csv(sro@meta.data, file = "Seurat/initial-meta-data-4I.csv")
 saveRDS(sro, file = "Seurat/initial-SRO-4I.rds")

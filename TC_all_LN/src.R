@@ -298,7 +298,7 @@ sro.imp <- magic(sro)
 saveRDS(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.rds")
 
 # ############################################################################ #
-# Redo UMAP and plot clusters ####
+# Redo UMAP ####
 sro.subset <- subset(sro, Annotation %in% c("Ki67+ TC", "early/transitional TC", "TC I", "TC II", 'TC III', "TC IV")) %>%
   RunUMAP(dims = 1:30, n.neighbors = 30, metric = "cosine", min.dist = 0.4, spread = 0.7)
 

@@ -242,94 +242,9 @@ sro$annotations <- factor(sro$annotations, levels = names(pal$Cluster.annot.from
 saveRDS(sro, file = "results/SRO.rds")
 
 write.csv(sro@meta.data, file = "results/meta-data.csv")
-# write.csv(sro@reductions$pca@cell.embeddings, file = "results/PCA.csv")
+write.csv(sro@reductions$pca@cell.embeddings, file = "results/PCA.csv")
 write.csv(sro@reductions$umap@cell.embeddings, file = "results/UMAP.csv")
 saveRDS(as.matrix(sro@assays$RNA@data), file = "results/unimputed-expr.rds")
-# writeMM(sro@assays$RNA@data, file = "results/unimputed-expr.mtx")
-# write.csv(sro@assays$RNA@data, file = "results/unimputed-expr.csv")
 
 sro.imp <- magic(sro)
-# saveRDS(sro.imp, file = "results/sro.imp.rds")
 saveRDS(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.rds")
-# write.csv(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.csv")
-
-# sro.imp <- ScaleData(sro.imp, features = rownames(sro.imp), assay = "MAGIC_RNA")
-# saveRDS(sro.imp@assays$MAGIC_RNA@scale.data, file = "results/scale-data.rds")
-
-# ############################################################################ #
-# Plot clusters ####
-# ############################################################################ #
-sro <- readRDS("results/SRO.rds")
-
-pdf("plots/QC/cluster-QC-UMAP.pdf", width = 15, height = 12)
-plot.groups(
-  sro = sro, pref.C = T, labels = T, vis = sro@reductions$umap@cell.embeddings,
-  clusters = sro$seurat_clusters, cl.name = "seurat_clusters", col = pal$Clusters
-)
-plot.continuous.value(sro, idx = rownames(sro@meta.data),
-                      val = sro$nCount_RNA, val.name='nCount_RNA', point.size=1)
-plot.continuous.value(sro, idx = rownames(sro@meta.data),
-                      val = sro$nFeature_RNA, val.name='nFeature_RNA', point.size=1)
-plot.continuous.value(sro, idx = rownames(sro@meta.data),
-                      val = sro$percent.MT, val.name='percent.MT', point.size=1)
-dev.off()
-
-ggsave(
-  filename = "plots/clusters.pdf", width = 15, height = 12,
-  plot = plot.groups(
-    sro = sro, pref.C = T, labels = T, vis = sro@reductions$umap@cell.embeddings,
-    clusters = sro$seurat_clusters, cl.name = "seurat_clusters", col = pal$Clusters
-  )
-)
-
-###
-# Lyu
-# R1 C2 ILC3
-# R2 C6 eTAC I
-# R3 C11 eTAC II
-lyu.cl.to.newcl <- c("2"="R1", 
-                     "6"="R2",
-                     "11"="R3"
-)
-
-sro$R.clusters <- lyu.cl.to.newcl[as.character(sro$Clusters)]
-sro$R.clusters <- factor(sro$R.clusters, levels = c("R1", "R2", "R3"))
-pdf("plots/R-clusters.pdf", width = 15, height = 12)
-plot.groups(sro, clusters = sro$R.clusters, cl.name = 'Cluster', pref.C = F, label = T, col = pal[['R.clusters']])
-dev.off()
-
-idx <- sro$Clusters %in% c(2, 6, 11)
-pdf("plots/R-clusters-RORgt+cells.pdf", width = 15, height = 12)
-plot.groups(sro, clusters = sro$R.clusters, idx = idx, cl.name = 'Cluster', pref.C = F, label = T, col = pal[['R.clusters']])
-dev.off()
-
-ggsave(
-  filename = "plots/annotations.pdf", width = 15, height = 12,
-  plot = plot.groups(
-    sro = sro, pref.C = F, labels = T,
-    clusters = sro$annotations, cl.name = "Annotation", col = pal$Cluster.annot.from.paper
-  )
-)
-
-## RORgt+ cells only ####
-idx <- sro$Clusters %in% c(2, 6, 11)
-annot.to.include <- as.character(unique(sro@meta.data[sro@meta.data$Clusters %in% c(2, 6, 11),'annotations']))
-ggsave(
-  filename = "plots/annotations-RORgt+cells.pdf", width = 10, height = 14,
-  plot = plot.groups(
-    sro = sro, pref.C = F, labels = T, idx = idx, 
-    clusters = sro$annotations, cl.name = "Annotation", col = pal$Cluster.annot.from.paper[annot.to.include]
-  )
-)
-
-# ############################################################################ #
-# Redo UMAP and clusters ####
-# ############################################################################ #
-sro.subset <- subset(sro, subset = Clusters %in% c(2, 6, 11)) %>%
-  ScaleData(features = rownames(sro)) %>%
-  RunPCA(features = rownames(sro), npcs = 50) %>%
-  run.PhenoGraph(npcs = 30, k = 30) %>%
-  RunUMAP(dims = 1:30, n.neighbors = 30, metric = "cosine", min.dist = 0.4, spread = 0.7)
-
-write.csv(sro.subset@reductions$umap@cell.embeddings, file = "results/UMAP-subset.csv")
-

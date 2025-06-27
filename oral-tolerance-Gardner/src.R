@@ -177,14 +177,8 @@ obs.e <- read.csv("data/GSE285182_adata_obs.csv", row.names = 1)
 sro.a$barcode <- stringr::str_split_i(rownames(sro.a@meta.data), "_", 3)
 sro.a$paper.annotations <- obs.a[sro.a$barcode, ]$final_cell_type
 
-table(sro.a$barcode %in% rownames(obs.a))
-
 sro.e$barcode <- stringr::str_split_i(rownames(sro.e@meta.data), "_", 3)
 sro.e$paper.clusters <- obs.e[sro.e$barcode, ]$leiden
-
-table(sro.e$barcode %in% rownames(obs.e))
-
-table(sro.e$paper.clusters, useNA='ifany')
 
 # sro.input <- sro.a
 # pref.sro.input <- pref.sro.a
@@ -228,7 +222,7 @@ adata <- AnnData(
 write_h5ad(adata, paste0(pref.sro.input, "unimputed-expr.h5ad"))
 
 
-# 2. RNA analysis ####
+# 3. annotate ####
 pref.sro.a <- 'Seurat/adult/'; pref.p.sro.a <- 'plots/Seurat/adult/'
 pref.sro.e <- 'Seurat/early/'; pref.p.sro.e <- 'plots/Seurat/early/'
 
@@ -241,16 +235,6 @@ pref.p.sro.input <- pref.p.sro.e
 subres.list <- seq(0.1, 0.5, 0.1)
 sro.subset <- subset(sro, RNA_snn_res.0.2 == 7)
 sro.input <- FindSubCluster.custom(sro.input, sro.subset, 'RNA_snn_res.0.2', 'res.0.2_C7_subres.', subres.list)
-
-raster_pdf(paste0(pref.p.sro.input, "UMAP-RNA_snn_res.0.2_subC7.pdf"), width = 12, height = 10, res = 300)
-for (subres in subres.list){
-    group.name <- paste0("res.0.2_C7_subres.", subres)
-    print(plot.clusters(sro.input, groups = sro.input@meta.data[[group.name]], clusters.col = group.name,
-              col = pal$Clusters_long, label.size = 5, labels = T,
-              point.size = 1, label.pad = 1, pref.C = T))
-}
-
-dev.off()
 
 cl.to.anno <- c(
     '1' = 'ILC3', 
@@ -286,7 +270,6 @@ cl.to.annot <- c(
   "17" = "LTi",
   "18" = "LTi"
 )
-
 
 sro.input$Cluster.annot <- sro.input$paper.annot
 sro.input$paper.annot <- as.character(cl.to.annot[as.character(sro.input$paper.clusters)])

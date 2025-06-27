@@ -235,67 +235,7 @@ write.csv(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.csv")
 # saveRDS(sro.imp@assays$MAGIC_RNA@scale.data, file = "results/scale-data.rds")
 
 # ############################################################################ #
-# Plot clusters ####
-# ############################################################################ #
-sro <- readRDS("results/SRO.rds")
-
-pdf("plots/QC/cluster-QC-UMAP.pdf", width = 15, height = 12)
-plot.groups(sro)
-plot.continuous.value(sro, idx = colnames(sro),
-                      val = sro$nCount_RNA, val.name='nCount_RNA', point.size=1)
-plot.continuous.value(sro, idx = colnames(sro),
-                      val = sro$nFeature_RNA, val.name='nFeature_RNA', point.size=1)
-plot.continuous.value(sro, idx = colnames(sro),
-                      val = sro$percent.MT, val.name='percent.MT', point.size=1)
-dev.off()
-
-pdf("plots/clusters.pdf", width = 15, height = 12)
-plot.groups(sro)
-dev.off()
-
-###
-# Kedmi
-# R1 C18 ILC3
-# R2 C16 Ki
-# R3 C1 TC I
-# R4 12 mixed TC2/3/4
-# R5 C10 lowQC
-kedmi.cl.to.newcl <- c("18"="R1",
-                       "16"="R2",
-                       "1"="R3",
-                       "12"="R4",
-                       "10"="R5"
-)
-
-sro$R.clusters <- kedmi.cl.to.newcl[as.character(sro$Clusters)]
-sro$R.clusters <- factor(sro$R.clusters, levels = c("R1", "R2", "R3", "R4", "R5"))
-pdf("plots/R-clusters.pdf", width = 15, height = 12)
-plot.groups(sro, clusters = sro$R.clusters, cl.name = 'Cluster', pref.C = F, label = T, col = pal[['R.clusters']])
-dev.off()
-
-idx <- sro$Clusters %in% c(1, 10, 12, 16, 18)
-pdf("plots/R-clusters-RORgt+cells.pdf", width = 15, height = 12)
-plot.groups(sro, clusters = sro$R.clusters, idx = idx, cl.name = 'Cluster', pref.C = F, label = T, col = pal[['R.clusters']])
-dev.off()
-
-##
-pdf("plots/annotations.pdf", width = 15, height = 12)
-plot.groups(sro, clusters = sro$Cluster.annot, cl.name = 'Cluster.annot', pref.C = F, col = pal[['Cluster.annot']])
-dev.off()
-
-# RORgt+ cells only 
-idx <- sro$Clusters %in% c(1, 10, 12, 16, 18)
-annot.to.include <- as.character(unique(sro@meta.data[sro@meta.data$Clusters %in% c(1, 10, 12, 16, 18),'Cluster.annot']))
-ggsave(
-  filename = "plots/annotations-RORgt+cells.pdf", width = 10, height = 14,
-  plot = plot.groups(
-    sro = sro, pref.C = F, labels = T, idx = idx, 
-    clusters = sro$Cluster.annot, cl.name = "Annotation", col = pal$Cluster.annot[annot.to.include]
-  )
-)
-
-# ############################################################################ #
-# Redo UMAP and plot clusters ####
+# Re-clusters ####
 # ############################################################################ #
 sro <- readRDS("results/SRO.rds")
 reslist <- seq(0.2, 2, 0.2)
