@@ -1,48 +1,45 @@
-setwd("~/0-workspace/CCR7_DC/GSE176282-wang-2021/")
-Sys.setenv(RETICULATE_PYTHON = "/data1/lesliec/tyler/utils/miniforge3/envs/multiome/bin/python")
-
-library(Seurat)
-library(Rphenograph)
-library(Rmagic)
-library(Matrix)
-library(dplyr)
-library(ggplot2)
-library(ggrepel)
-library(cowplot)
-library(ComplexHeatmap)
-library(circlize)
-library(RColorBrewer)
-
+# Wang
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(Rphenograph)
+  library(Rmagic)
+  library(Matrix)
+  library(dplyr)
+  library(ggplot2)
+  library(ggrepel)
+  library(cowplot)
+  library(ComplexHeatmap)
+  library(circlize)
+  library(RColorBrewer)
+})
 set.seed(1)
 options(future.globals.maxSize = Inf)
 
-# pal <- list(
-#   R.clusters = c('R1' = '#077315', 'R2' = '#d1c50f', 'R3' = '#2e2bed',
-#                  'R4' = '#e60e0e', 'R5' = 'pink'
-#   ),
-#   Cluster.annot = c(
-#     'TC I' = "#2e2bed", 'TC II, III, IV' = "#e60e0e", 'Ki67 TC' = "#d1c50f", 'LTi' = "#077315", 'B cell' = "#f081e6",
-#     'Other' = 'darkgray', 'low QC' = 'lightgray')
-# )
-# pal$Clusters <- pal$Cluster.annot[c('TC I', 'Other', 'Other', 'TC II, III, IV', 'Other', 'Other', 'Other', 'Other', 'Other', 'B cell', 'Ki67 TC',
-#                                     'Other', 'Other', 'low QC', 'Other', 'Other', 'Other', 'Other', 'Other', 'LTi', 'Other')]
-# cl.col = c(
-#   "#1ee3c5", "#7c2da6",
-#   "#de9309", "#489de8", "#5fed0e",
-#   "#bd537a", "#2f026e", "#1f758c", "#9c6fa8", "#6b6580",
-#   "#9e7d3f", "#49709c", "#ccf3ff", "#5c1a1a", "#d1d18a",
-#   "#c9a6a1", "#827c68", "#b54800", "#79a695"
-# )
-# cc <- 1
-# for (i in 1:length(pal$Clusters)){
-#   if (pal$Clusters[i] == 'darkgray'){
-#     pal$Clusters[i] <- cl.col[cc]
-#     cc <- cc+1
-#   }
-# }
-# names(pal$Clusters) <- 1:length(pal$Clusters)
-# saveRDS(pal, file = "plots/palette.rds")
-pal <- readRDS("plots/palette.rds")
+pal <- list(
+  R.clusters = c('R1' = '#077315', 'R2' = '#d1c50f', 'R3' = '#2e2bed',
+                 'R4' = '#e60e0e', 'R5' = 'pink'
+  ),
+  Cluster.annot = c(
+    'TC I' = "#2e2bed", 'TC II, III, IV' = "#e60e0e", 'Ki67 TC' = "#d1c50f", 'LTi' = "#077315", 'B cell' = "#f081e6",
+    'Other' = 'darkgray', 'low QC' = 'lightgray')
+)
+pal$Clusters <- pal$Cluster.annot[c('TC I', 'Other', 'Other', 'TC II, III, IV', 'Other', 'Other', 'Other', 'Other', 'Other', 'B cell', 'Ki67 TC',
+                                    'Other', 'Other', 'low QC', 'Other', 'Other', 'Other', 'Other', 'Other', 'LTi', 'Other')]
+cl.col = c(
+  "#1ee3c5", "#7c2da6",
+  "#de9309", "#489de8", "#5fed0e",
+  "#bd537a", "#2f026e", "#1f758c", "#9c6fa8", "#6b6580",
+  "#9e7d3f", "#49709c", "#ccf3ff", "#5c1a1a", "#d1d18a",
+  "#c9a6a1", "#827c68", "#b54800", "#79a695"
+)
+cc <- 1
+for (i in 1:length(pal$Clusters)){
+  if (pal$Clusters[i] == 'darkgray'){
+    pal$Clusters[i] <- cl.col[cc]
+    cc <- cc+1
+  }
+}
+names(pal$Clusters) <- 1:length(pal$Clusters)
 
 plot.QC.violin <- function(sro, ident, feature, yintercept, br, Log10 = F, pal = NULL){
   if(feature == "nCount_RNA"){ name <- "number of transcripts"
@@ -342,27 +339,3 @@ sro <- sro %>%
 pref <- "results/"; dir.create(pref)
 write.csv(sro@meta.data, file = paste0(pref, "meta-data.csv"), quote = F)
 saveRDS(sro, file = paste0(pref, "SRO.rds"))
-
-## plot ####
-pal$Clusters2 = c(
-    "#00bf00", "#489de8", "#d40663", "#f8c72f", "#077315",
-    "#785cd4", "#e67109", "#0eefff", "#f081e6", "#260691",
-    "#49709c", "#9e7d3f", "#bd537a", "#4e225c", "#f202ed",
-    "#fec55f", "#062e0b", "#9c6fa8", "#078d94", "#5c1a1a",
-    "#827c68", "#aebeff", "#9c2903", "#ffc5af", "#4f5715",
-    "#0249f0", "#f43525", "#0077ff", "#7f227e", "#dfddff",
-    "#7e85d7", "#fff64f", "#5fed0e", "#543018", "#f31220"
-)
-
-pref.p <- 'plots/'
-pdf(paste0(pref.p, "UMAP-Clusters.pdf"), width = 15, height = 12)
-for (res in reslist){
-    colname <- paste0("RNA_snn_res.", res)
-    print(
-        plot.groups(sro, clusters = sro@meta.data[[colname]],
-                    cl.name = colname, col = pal$Clusters2,
-                    point.size = 0.5,
-                    pref.C = T)
-    )
-}
-dev.off()

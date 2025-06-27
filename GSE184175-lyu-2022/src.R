@@ -1,17 +1,17 @@
-setwd("~/0-workspace/CCR7_DC/GSE184175-lyu-2022/")
-
-library(Seurat)
-library(Rphenograph)
-library(Rmagic)
-library(Matrix)
-library(dplyr)
-library(ggplot2)
-library(ggrepel)
-library(cowplot)
-library(ComplexHeatmap)
-library(circlize)
-library(RColorBrewer)
-
+# Lyu
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(Rphenograph)
+  library(Rmagic)
+  library(Matrix)
+  library(dplyr)
+  library(ggplot2)
+  library(ggrepel)
+  library(cowplot)
+  library(ComplexHeatmap)
+  library(circlize)
+  library(RColorBrewer)
+})
 set.seed(1)
 options(future.globals.maxSize = Inf)
 # pal ####
@@ -323,7 +323,7 @@ ggsave(
 )
 
 # ############################################################################ #
-# Redo UMAP and plot clusters ####
+# Redo UMAP and clusters ####
 # ############################################################################ #
 sro.subset <- subset(sro, subset = Clusters %in% c(2, 6, 11)) %>%
   ScaleData(features = rownames(sro)) %>%
@@ -332,47 +332,4 @@ sro.subset <- subset(sro, subset = Clusters %in% c(2, 6, 11)) %>%
   RunUMAP(dims = 1:30, n.neighbors = 30, metric = "cosine", min.dist = 0.4, spread = 0.7)
 
 write.csv(sro.subset@reductions$umap@cell.embeddings, file = "results/UMAP-subset.csv")
-
-pdf("plots/R-clusters-RORgt+cells.pdf", width = 15, height = 12)
-plot.groups(sro.subset, clusters = sro.subset$R.clusters, cl.name = 'Cluster', pref.C = F, label = T, col = pal[['R.clusters']])
-dev.off()
-
-# RORgt+ cells only 
-annot.to.include <- as.character(unique(sro@meta.data[sro@meta.data$Clusters %in% c(2, 6, 11), 'annotations']))
-ggsave(
-  filename = "plots/annotations-RORgt+cells.pdf", width = 15, height = 12,
-  plot = plot.groups(
-    sro = sro.subset, pref.C = F, labels = T, 
-    clusters = sro.subset$annotations, cl.name = "Annotation", col = pal$Cluster.annot.from.paper[annot.to.include]
-  )
-)
-
-# ############################################################################ #
-# Dot plot ####
-# ############################################################################ #
-sro <- readRDS("results/SRO.rds")
-sro.subset <- subset(sro, subset = Clusters %in% c(2, 6, 11))
-
-genes <- c("CXCR6", "RORA", "AIRE", "GAL", 'COL17A1', 'H2-K1', 
-           'DNASE1L3', 'NLRC5', 
-           'ITGB8', 'CCL22')
-Idents(sro) <- sro$annotations
-Idents(sro.subset) <- sro.subset$annotations
-
-ggsave(
-  filename = "plots/dot-all-cells.pdf", width = 15, height = 12,
-  plot = DotPlot(sro, assay = "RNA", group.by = "annotations",
-                 features = genes, cols = c("blue", "red"), dot.scale = 7) +
-    scale_x_discrete(breaks = genes, labels = genes) +
-    theme(axis.text.x.bottom = element_text(angle = 90, vjust = 0, size = 11)) + labs(x = "", y = "Annotation")
-)
-
-
-ggsave(
-  filename = "plots/dot-RORgt+cells.pdf", width = 15, height = 12,
-  plot = DotPlot(sro.subset, assay = "RNA", group.by = "annotations",
-                 features = genes, cols = c("blue", "red"), dot.scale = 7) +
-    scale_x_discrete(breaks = genes, labels = genes) +
-    theme(axis.text.x.bottom = element_text(angle = 90, vjust = 0, size = 11)) + labs(x = "", y = "Annotation")
-)
 

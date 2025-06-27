@@ -1,6 +1,4 @@
-Sys.setenv(RETICULATE_PYTHON = "/data1/lesliec/tyler/utils/miniforge3/envs/multiome/bin/python")
-setwd("~/0-workspace/CCR7_DC/oral-tolerance-Colonna/")
-
+# Colonna
 suppressPackageStartupMessages({
   library(curl)
   library(Seurat)
@@ -26,41 +24,31 @@ options(future.globals.maxSize = Inf)
 
 source("utils.R")
 
-# pal <- list(
-#   Clusters = c(
-#     "#5fed0e", "#489de8", "#d40663", "#d1c50f", "#077315",
-#     "#e67109", "#785cd4", "#260691", "#9e7d3f", "#bd537a",
-#     "#49709c", "#aebeff", "#9c2903", "#9c6fa8", "#827c68",
-#     "#062e0b", "#1ee3c5"
-#   ),
-#   Clusters_long = c(
-#     "#000000", "#FAD09F", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
-#     "#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87",
-#     "#5A0007", "#809693", "#1B4400", "#4FC601", "#3B5DFF", "#4A3B53", "#FF2F80",
-#     "#61615A", "#BA0900", "#6B7900", "#00C2A0", "#FFAA92", "#FF90C9", "#B903AA", "#D16100",
-#     "#DDEFFF", "#000035", "#7B4F4B", "#A1C299", "#300018", "#0AA6D8", "#013349", "#00846F",
-#     "#372101", "#FFFF00", "#C2FFED", "#A079BF", "#CC0744", "#C0B9B2", "#C2FF99", "#001E09",
-#     "#00489C", "#6F0062", "#0CBD66", "#EEC3FF", "#456D75", "#B77B68", "#7A87A1", "#788D66",
-#     "#885578", "#FAD09F", "#FF8A9A", "#D157A0", "#BEC459", "#456648", "#0086ED", "#886F4C",
-#     "#34362D", "#B4A8BD", "#00A6AA", "#452C2C", "#636375", "#A3C8C9", "#FF913F", "#938A81",
-#     "#575329", "#00FECF", "#B05B6F", "#8CD0FF", "#3B9700", "#04F757", "#C8A1A1", "#1E6E00",
-#     "#7900D7", "#A77500", "#6367A9", "#A05837", "#6B002C", "#772600", "#D790FF", "#9B9700",
-#     "#549E79", "#FFF69F", "#201625", "#72418F", "#BC23FF", "#99ADC0", "#3A2465", "#922329",
-#     "#5B4534", "#FDE8DC", "#404E55", "#0089A3", "#CB7E98", "#A4E804", "#324E72", "#6A3A4C")
-# )
-# dir.create('plots')
-# saveRDS(pal, file = "plots/palette.rds")
-pal <- readRDS(file = "plots/palette.rds")
+pal <- list(
+  Clusters = c(
+    "#5fed0e", "#489de8", "#d40663", "#d1c50f", "#077315",
+    "#e67109", "#785cd4", "#260691", "#9e7d3f", "#bd537a",
+    "#49709c", "#aebeff", "#9c2903", "#9c6fa8", "#827c68",
+    "#062e0b", "#1ee3c5"
+  ),
+  Clusters_long = c(
+    "#000000", "#FAD09F", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
+    "#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87",
+    "#5A0007", "#809693", "#1B4400", "#4FC601", "#3B5DFF", "#4A3B53", "#FF2F80",
+    "#61615A", "#BA0900", "#6B7900", "#00C2A0", "#FFAA92", "#FF90C9", "#B903AA", "#D16100",
+    "#DDEFFF", "#000035", "#7B4F4B", "#A1C299", "#300018", "#0AA6D8", "#013349", "#00846F",
+    "#372101", "#FFFF00", "#C2FFED", "#A079BF", "#CC0744", "#C0B9B2", "#C2FF99", "#001E09",
+    "#00489C", "#6F0062", "#0CBD66", "#EEC3FF", "#456D75", "#B77B68", "#7A87A1", "#788D66",
+    "#885578", "#FAD09F", "#FF8A9A", "#D157A0", "#BEC459", "#456648", "#0086ED", "#886F4C",
+    "#34362D", "#B4A8BD", "#00A6AA", "#452C2C", "#636375", "#A3C8C9", "#FF913F", "#938A81",
+    "#575329", "#00FECF", "#B05B6F", "#8CD0FF", "#3B9700", "#04F757", "#C8A1A1", "#1E6E00",
+    "#7900D7", "#A77500", "#6367A9", "#A05837", "#6B002C", "#772600", "#D790FF", "#9B9700",
+    "#549E79", "#FFF69F", "#201625", "#72418F", "#BC23FF", "#99ADC0", "#3A2465", "#922329",
+    "#5B4534", "#FDE8DC", "#404E55", "#0089A3", "#CB7E98", "#A4E804", "#324E72", "#6A3A4C")
+)
+dir.create('plots')
 
 # 1. Load data ####
-# Quality control comprised the removal of cells with mitochondrial content exceeding 5%-7.5%, 
-# as well as those containing fewer than 500-2500 or 
-# more than 7500-9500 genes per cell. 
-# Normalization involved log transformation with a scaling factor of 10000. 
-# To reduce dimensionality, the RunUMAP, FindNeighbors, and 
-# FindClusters functions were used including the top 15-18 principal components, 
-# alongside with a resolution parameter of 0.18-0.2.
-
 pref.sro <- 'Seurat/'; pref.p.sro <- 'plots/Seurat/'
 dir.create(pref.sro); dir.create(pref.p.sro)
 
@@ -130,8 +118,6 @@ write.csv(sro@meta.data, file = "Seurat/initial-meta-data-4I.csv")
 saveRDS(sro, file = "Seurat/initial-SRO-4I.rds")
 
 # 2. RNA analysis ####
-# After quality control, we generated a UMAP of 4,119 cells, 
-# with 2,013 from the hCD2+ and 2,106 from the hCD2− TdTomato+ fractions (Figure 4I).
 pref.sro <- 'Seurat/merged-4I/'; pref.p.sro <- 'plots/Seurat/merged-4I/'
 dir.create(pref.sro); dir.create(pref.p.sro)
 sro <- readRDS(paste0('Seurat/initial-SRO-4I.rds'))
@@ -174,52 +160,3 @@ adata <- AnnData(
   )
 )
 write_h5ad(adata, paste0(pref.sro, "unimputed-expr.h5ad"))
-
-## plots ####
-dir.create(paste0(pref.p.sro, "QC"))
-for (res in res.list){
-  colname <- paste0("RNA_snn_res.", res)
-  pl <- plot.all.QC(sro, ident = colname, col = pal$Clusters_long)
-  pdf(paste0(pref.p.sro, "QC/violin-QC-", colname, ".pdf"), width = 12, height = 6)
-  for (i in 1:length(pl)){
-    print(pl[[i]])
-  }
-  dev.off()
-}
-
-pdf(paste0(pref.p.sro, "QC/UMAP-QC.pdf"), width = 12, height = 10)
-plot.continuous.value(sro, idx = rownames(sro@meta.data), vis = sro@reductions$umap@cell.embeddings,
-                      val = sro$nCount_RNA, val.name='nCount_RNA', point.size=1)
-plot.continuous.value(sro, idx = rownames(sro@meta.data), vis = sro@reductions$umap@cell.embeddings,
-                      val = sro$nFeature_RNA, val.name='nFeature_RNA', point.size=1)
-plot.continuous.value(sro, idx = rownames(sro@meta.data), vis = sro@reductions$umap@cell.embeddings,
-                      val = sro$MtFrac_RNA, val.name='MtFrac_RNA', point.size=1)
-plot.continuous.value(sro, idx = rownames(sro@meta.data), vis = sro@reductions$umap@cell.embeddings,
-                      val = sro$S.Score, val.name='S.Score', point.size=1)
-plot.continuous.value(sro, idx = rownames(sro@meta.data), vis = sro@reductions$umap@cell.embeddings,
-                      val = sro$G2M.Score, val.name='G2M.Score', point.size=1)
-dev.off()
-
-pdf(paste0(pref.p.sro, "UMAP-Clusters.pdf"), width = 12, height = 10)
-for (res in res.list){
-  colname <- paste0("RNA_snn_res.", res)
-  print(
-    plot.clusters(sro, groups = sro@meta.data[[colname]],
-                  clusters.col = colname, col = pal$Clusters_long,
-                  label.size = 5, point.size = 0.5,
-                  pref.C = T)
-  )
-}
-dev.off()
-
-pdf(paste0(pref.p.sro, "UMAP-sample.pdf"), width = 12, height = 10)
-plot.clusters(sro, groups = sro$sample, clusters.col = "sample",
-              col = pal$Clusters, label.size = 5, labels = F, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-pdf(paste0(pref.p.sro, "UMAP-HTO.pdf"), width = 12, height = 10)
-plot.clusters(sro, groups = sro$Assignment, clusters.col = "HTO Assignment",
-              col = pal$Clusters, label.size = 5, labels = F, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()

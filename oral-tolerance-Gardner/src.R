@@ -1,6 +1,4 @@
-Sys.setenv(RETICULATE_PYTHON = "/data1/lesliec/tyler/utils/miniforge3/envs/multiome/bin/python")
-setwd("~/0-workspace/CCR7_DC/oral-tolerance-Gardner/")
-
+# Gardner
 suppressPackageStartupMessages({
   library(Seurat)
   library(ArchR)
@@ -48,6 +46,32 @@ pal <- list(
 dir.create('plots')
 saveRDS(pal, file = "plots/palette.rds")
 pal <- readRDS(file = "plots/palette.rds")
+
+FindSubCluster.custom <- function(sro, sro.subset, master.res, 
+                                  newcolname.pref,
+                                  subres.list = seq(0.1, 0.5, 0.1)
+){
+  cell.count <- rowSums(sro.subset@assays$RNA@counts > 0)
+  sro.subset <- NormalizeData(sro.subset[cell.count > 1, ]) %>%
+    FindVariableFeatures(selection.method = "vst", nfeatures = 5000)
+  
+  sro.subset <- ScaleData(sro.subset, features = rownames(sro.subset)) %>%
+    RunPCA(features = rownames(sro.subset), npcs = 50) %>%
+    FindNeighbors(dims = 1:30, k.param = 30) %>%
+    FindClusters(resolution = subres.list) %>%
+    RunUMAP(dims = 1:30, n.neighbors = 30, metric = "cosine", min.dist = 0.4, spread = 1)
+  
+  for (res in subres.list){
+    colname.in.subset <- paste0("RNA_snn_res.", res)
+    newcolname <- paste0(newcolname.pref, res)
+    subclusters <- ifelse(test = is.na(sro.subset@meta.data[colnames(sro), colname.in.subset]),
+                          yes = sro.subset@meta.data[colnames(sro), colname.in.subset],
+                          no = paste0("sub", sro.subset@meta.data[colnames(sro), colname.in.subset])
+    )
+    sro@meta.data[[newcolname]] <- coalesce(subclusters, sro@meta.data[[master.res]])
+  }
+  return(sro)
+}
 
 adata.e <- read_h5ad("data/GSE285182_early_life_int.h5ad")
 adata.a <- read_h5ad("data/GSE273746_named_int_td_adata_OG_FINAL.h5ad")
@@ -100,10 +124,6 @@ thr.a <- data.frame(nc.max = 60000, nf.max = 8000,
 thr.e <- data.frame(nc.max = 35000, nf.max = 5500, 
                   mp.max = 5)
 
-17975+13482+27642
-
-14682+11428+22408
-
 cell.discard.a <- sro.a$nCount_RNA > thr.a$nc.max |
   sro.a$nFeature_RNA > thr.a$nf.max |
   sro.a$MtFrac_RNA > thr.a$mp.max
@@ -133,7 +153,6 @@ pdf("plots/Seurat/QC/violin-early-sample-RNA-QC.pdf", width = 8, height = 6)
 plot.all.QC(sro.e, ident = "sample", thr = thr.e)
 dev.off()
 
-# sro <- sro[, !cell.discard] # not run here
 write.csv(sro.a@meta.data, file = "Seurat/adult-initial-meta-data.csv")
 saveRDS(sro.a, file = "Seurat/adult-initial-SRO.rds")
 
@@ -146,11 +165,11 @@ pref.sro.e <- 'Seurat/early/'; pref.p.sro.e <- 'plots/Seurat/early/'
 dir.create(pref.sro.e); dir.create(pref.p.sro.e)
 
 # # 2. RNA analysis ####
-# sro.a <- readRDS(paste0('Seurat/adult-initial-SRO.rds'))
-# sro.a <- sro.a[, !cell.discard.a]
+sro.a <- readRDS(paste0('Seurat/adult-initial-SRO.rds'))
+sro.a <- sro.a[, !cell.discard.a]
 
-# sro.e <- readRDS(paste0('Seurat/early-initial-SRO.rds'))
-# sro.e <- sro.e[, !cell.discard.e]
+sro.e <- readRDS(paste0('Seurat/early-initial-SRO.rds'))
+sro.e <- sro.e[, !cell.discard.e]
 
 obs.a <- read.csv("data/GSE273746_adata_obs.csv", row.names = 1)
 obs.e <- read.csv("data/GSE285182_adata_obs.csv", row.names = 1)
@@ -210,120 +229,6 @@ write_h5ad(adata, paste0(pref.sro.input, "unimputed-expr.h5ad"))
 
 
 # 2. RNA analysis ####
-sro.a <- readRDS(paste0('Seurat/adult/SRO.rds'))
-
-sro.input <- sro.a
-pref.sro.input <- pref.sro.a
-pref.p.sro.input <- pref.p.sro.a
-
-pdf(paste0(pref.p.sro.input, "QC/violin-paper.annotations-RNA-QC.pdf"), width = 16, height = 6)
-plot.all.QC(sro.input, ident = "paper.annotations")
-dev.off()
-
-## plots ####
-dir.create(paste0(pref.p.sro.input, 'QC/'), recursive = T)
-
-for (res in res.list){
-  colname <- paste0("RNA_snn_res.", res)
-  pl <- plot.all.QC(sro.input, ident = colname, col = pal$Clusters_long)
-  pdf(paste0(pref.p.sro.input, "QC/violin-QC-", colname, ".pdf"), width = 12, height = 6)
-  for (i in 1:length(pl)){
-    print(pl[[i]])
-  }
-  dev.off()
-}
-
-pdf(paste0(pref.p.sro.input, "QC/violin-sample-RNA-QC.pdf"), width = 8, height = 6)
-plot.all.QC(sro.input, ident = "sample")
-dev.off()
-
-pdf(paste0(pref.p.sro.input, "QC/UMAP-QC.pdf"), width = 12, height = 10)
-plot.continuous.value(sro.input, idx = rownames(sro.input@meta.data), vis = sro.input@reductions$umap@cell.embeddings,
-                      val = sro.input$nCount_RNA, val.name='nCount_RNA', point.size=1)
-plot.continuous.value(sro.input, idx = rownames(sro.input@meta.data), vis = sro.input@reductions$umap@cell.embeddings,
-                      val = sro.input$nFeature_RNA, val.name='nFeature_RNA', point.size=1)
-plot.continuous.value(sro.input, idx = rownames(sro.input@meta.data), vis = sro.input@reductions$umap@cell.embeddings,
-                      val = sro.input$MtFrac_RNA, val.name='MtFrac_RNA', point.size=1)
-plot.continuous.value(sro.input, idx = rownames(sro.input@meta.data), vis = sro.input@reductions$umap@cell.embeddings,
-                      val = sro.input$S.Score, val.name='S.Score', point.size=1)
-plot.continuous.value(sro.input, idx = rownames(sro.input@meta.data), vis = sro.input@reductions$umap@cell.embeddings,
-                      val = sro.input$G2M.Score, val.name='G2M.Score', point.size=1)
-dev.off()
-
-pdf(paste0(pref.p.sro.input, "UMAP-Clusters.pdf"), width = 12, height = 10)
-for (res in res.list){
-  colname <- paste0("RNA_snn_res.", res)
-  print(
-    plot.clusters(sro.input, groups = sro.input@meta.data[[colname]],
-                  clusters.col = colname, col = pal$Clusters_long,
-                  label.size = 5, point.size = 0.5,
-                  pref.C = T)
-  )
-}
-dev.off()
-
-pdf(paste0(pref.p.sro.input, "UMAP-sample.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$sample, clusters.col = "sample",
-              col = pal$Clusters, label.size = 5, labels = F, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-pdf(paste0(pref.p.sro.input, "UMAP-age.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$age, clusters.col = "age",
-              col = pal$Clusters, label.size = 5, labels = F, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-pdf(paste0(pref.p.sro.input, "UMAP-tissue.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$tissue, clusters.col = "tissue",
-              col = pal$Clusters, label.size = 5, labels = F, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-
-# for adult
-# pdf(paste0(pref.p.sro.input, "UMAP-paper.annotations.pdf"), width = 12, height = 10)
-# plot.clusters(sro.input, groups = sro.input$paper.annotations, clusters.col = "paper.annotations",
-#               col = pal$Clusters, label.size = 5, labels = T, point.size = 0.5,
-#               label.pad = 1, pref.C = F)
-# dev.off()
-
-
-# for child
-pdf(paste0(pref.p.sro.input, "UMAP-paper.clusters.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$paper.clusters, clusters.col = "paper.clusters",
-              col = pal$Clusters, label.size = 5, labels = T, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-
-FindSubCluster.custom <- function(sro, sro.subset, master.res, 
-                                  newcolname.pref,
-                                  subres.list = seq(0.1, 0.5, 0.1)
-                                  ){
-  cell.count <- rowSums(sro.subset@assays$RNA@counts > 0)
-  sro.subset <- NormalizeData(sro.subset[cell.count > 1, ]) %>%
-    FindVariableFeatures(selection.method = "vst", nfeatures = 5000)
-  
-  sro.subset <- ScaleData(sro.subset, features = rownames(sro.subset)) %>%
-    RunPCA(features = rownames(sro.subset), npcs = 50) %>%
-    FindNeighbors(dims = 1:30, k.param = 30) %>%
-    FindClusters(resolution = subres.list) %>%
-    RunUMAP(dims = 1:30, n.neighbors = 30, metric = "cosine", min.dist = 0.4, spread = 1)
-  
-  for (res in subres.list){
-    colname.in.subset <- paste0("RNA_snn_res.", res)
-    newcolname <- paste0(newcolname.pref, res)
-    subclusters <- ifelse(test = is.na(sro.subset@meta.data[colnames(sro), colname.in.subset]),
-                          yes = sro.subset@meta.data[colnames(sro), colname.in.subset],
-                          no = paste0("sub", sro.subset@meta.data[colnames(sro), colname.in.subset])
-    )
-    sro@meta.data[[newcolname]] <- coalesce(subclusters, sro@meta.data[[master.res]])
-  }
-  return(sro)
-}
-
-
 pref.sro.a <- 'Seurat/adult/'; pref.p.sro.a <- 'plots/Seurat/adult/'
 pref.sro.e <- 'Seurat/early/'; pref.p.sro.e <- 'plots/Seurat/early/'
 
@@ -347,8 +252,6 @@ for (subres in subres.list){
 
 dev.off()
 
-table(sro.input$`res.0.2_C7_subres.0.1`)
-
 cl.to.anno <- c(
     '1' = 'ILC3', 
     '10' = 'ILC3',
@@ -358,26 +261,11 @@ cl.to.anno <- c(
     'sub3' = 'Proliferating eTAC'
 )
 
-head(sro$res.0.2_C7_subres.0.1)
-
 sro.input$paper.annot <- ifelse(
     sro.input$`res.0.2_C7_subres.0.1` %in% names(cl.to.anno),
     yes = cl.to.anno[sro.input$`res.0.2_C7_subres.0.1`],
     no = 'na'
 )
-
-raster_pdf(paste0(pref.p.sro.input, "UMAP-paper.annot.pdf"), width = 12, height = 10, res = 300)
-group.name <- "paper.annot"
-print(plot.clusters(sro.input, groups = sro.input@meta.data[[group.name]], clusters.col = group.name,
-          col = pal$Clusters, label.size = 5, labels = T,
-          point.size = 1, label.pad = 1, pref.C = F))
-dev.off()
-
-## save res ####
-write.csv(sro.input@meta.data, file = paste0(pref.sro.input, "meta-data.csv"), quote = F)
-saveRDS(sro.input, file = paste0(pref.sro.input, "SRO.rds"))
-
-
 
 cl.to.annot <- c(
   "0" = "LTi",
@@ -401,32 +289,7 @@ cl.to.annot <- c(
 
 
 sro.input$Cluster.annot <- sro.input$paper.annot
-
 sro.input$paper.annot <- as.character(cl.to.annot[as.character(sro.input$paper.clusters)])
-
-# for child
-pdf(paste0(pref.p.sro.input, "UMAP-paper.clusters.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$paper.clusters, clusters.col = "paper.clusters",
-              col = pal$Clusters, label.size = 5, labels = T, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-
-# for child
-pdf(paste0(pref.p.sro.input, "UMAP-Cluster.annot.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$Cluster.annot, clusters.col = "Cluster.annot",
-              col = pal$Clusters, label.size = 5, labels = T, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
-
-# for child
-pdf(paste0(pref.p.sro.input, "UMAP-paper.annot.pdf"), width = 12, height = 10)
-plot.clusters(sro.input, groups = sro.input$paper.annot, clusters.col = "paper.annot",
-              col = pal$Clusters, label.size = 5, labels = T, point.size = 0.5,
-              label.pad = 1, pref.C = F)
-dev.off()
-
 
 ## save res ####
 write.csv(sro.input@meta.data, file = paste0(pref.sro.input, "meta-data.csv"), quote = F)
