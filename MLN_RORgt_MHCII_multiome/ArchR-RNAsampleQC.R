@@ -1,5 +1,4 @@
-setwd("~/0-workspace/CCR7_DC/MLN_RORgt_MHCII_multiome/")
-
+# MLN
 suppressPackageStartupMessages(library(ArchR))
 library(GenomicRanges)
 library(Biostrings)

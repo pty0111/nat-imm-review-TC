@@ -10,6 +10,7 @@ The repo contains code for analyzing and integrating 9 publicly available scRNA-
 
 Code in this repo requires R 4.2.3 and Python 3.8 as well as the following dependencies:
 - Seurat v4.4.0
+- ArchR
 - dplyr
 - ggplot2
 - Scanpy v1.9.3
