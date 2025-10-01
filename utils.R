@@ -169,7 +169,7 @@ plot.clusters.highlight.one <- function(
     clusters2 <- factor(as.character(clusters[idx2]), levels = new.levels)
   }
   gp <- gp + geom_point(
-    mapping = aes(x = vis1[, 1], y = vis1[, 2]), color = 'lightgray',
+    mapping = aes(x = vis1[, 1], y = vis1[, 2]), color = '#f0f0f0',
     size = point.size, alpha = point.alpha
   ) + geom_point(
     mapping = aes(x = vis2[, 1], y = vis2[, 2], color = clusters2),
@@ -238,5 +238,10 @@ RenameGenesSeurat <- function(obj, newnames) {
 get.named.vector <- function(md, colname){
   val.vec <- md[,colname]; names(val.vec) <- rownames(md)
   return(val.vec)
+}
+
+get.named.vector.sro <- function(sro, colname){
+    val.vec <- sro@meta.data[, colname]; names(val.vec) <- rownames(sro@meta.data)
+    return(val.vec)
 }
 

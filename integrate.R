@@ -1,6 +1,6 @@
 # integrate all datasets
 Sys.setenv(RETICULATE_PYTHON = "/data1/lesliec/tyler/utils/miniforge3/envs/multiome/bin/python")
-setwd("~/0-workspace/CCR7_DC/oral-tolerance-integrate/")
+setwd("~/0-workspace/nat-imm-review-TC/")
 
 suppressPackageStartupMessages({
   library(curl)
@@ -24,13 +24,14 @@ set.seed(1)
 options(future.globals.maxSize = Inf)
 plan(strategy = "multicore", workers = 16)
 
+pal <- readRDS("plots/palette.rds")
 source("utils.R")
 
 # ############################################################################ #
 # 1. Load SROs ####
 # ############################################################################ #
 ## MLN_RORgt ####
-sro1 <- readRDS("../MLN_RORgt_MHCII_multiome/Seurat/results/SRO.rds")
+sro1 <- readRDS("../GSE205066-MLN_RORgt_MHCII_multiome-Brown/Seurat/results/SRO.rds")
 sro1$MtFrac_RNA <- sro1$percent.MT
 
 sro1@assays$RNA@meta.features$symbol.unique <- make.unique(sro1@assays$RNA@meta.features$Symbol)
@@ -110,7 +111,7 @@ sro4$paper.annot <- sro4$Cluster.annot
 Idents(sro4) <- sro4$Cluster.prev
 
 ## TC_all_LN ####
-sro5 <- readRDS("../TC_all_LN/results/SRO.rds")
+sro5 <- readRDS("../GSE294005-TC_all_LN-Brown/results/SRO.rds")
 sro5$MtFrac_RNA <- sro5$percent.MT
 sro5 <- sro5 %>% subset(Clusters2 %in% c(1:7)) %>%
   NormalizeData() %>% FindVariableFeatures(nfeatures = 5000) %>%
@@ -123,7 +124,7 @@ sro5$paper.annot <- sro5$Cluster.annot
 Idents(sro5) <- sro5$Cluster.prev
 
 ## oral tolerance Colonna ####
-sro6 <- readRDS("../oral-tolerance-Colonna/Seurat/merged-4I/SRO.rds")
+sro6 <- readRDS("../GSE289268-oral-tolerance-Colonna/Seurat/merged-4I/SRO.rds")
 sro6 <- RenameGenesSeurat(sro6, toupper(rownames(sro6)))
 
 cl.annot <- c('5' = 'TC II', '7' = 'TC I', '9' = 'TC III', '10' = 'TC IV', '0' = 'ILC3')
@@ -142,7 +143,7 @@ sro6$paper.annot <- sro6$Cluster.annot
 Idents(sro6) <- sro6$Cluster.prev
 
 ## oral tolerance Littman ####
-sro7 <- readRDS("../oral-tolerance-Littman/Seurat/merged/SRO.rds")
+sro7 <- readRDS("../zenodo-15212000-oral-tolerance-Littman-oral-tolerance-Littman/Seurat/merged/SRO.rds")
 sro7 <- RenameGenesSeurat(sro7, toupper(rownames(sro7)))
 sro7$RabiClusters[is.na(sro7$RabiClusters)] <- 'na'
 
@@ -163,7 +164,7 @@ Idents(sro7) <- sro7$Cluster.prev
 
 ## oral tolerance Gardner ####
 ### adult
-sro8 <- readRDS("../oral-tolerance-Gardner/Seurat/adult/SRO.rds")
+sro8 <- readRDS("../GSE273746-GSE285182-oral-tolerance-Gardner-oral-tolerance-Gardner/Seurat/adult/SRO.rds")
 sro8 <- RenameGenesSeurat(sro8, toupper(rownames(sro8)))
 sro8$paper.annotations[is.na(sro8$paper.annotations)] <- 'na'
 
@@ -183,7 +184,7 @@ sro8$paper.annot <- sro8$paper.annotations
 Idents(sro8) <- sro8$Cluster.prev
 
 ### early life
-sro9 <- readRDS("../oral-tolerance-Gardner/Seurat/early/SRO.rds")
+sro9 <- readRDS("../GSE273746-GSE285182-oral-tolerance-Gardner-oral-tolerance-Gardner/Seurat/early/SRO.rds")
 sro9 <- RenameGenesSeurat(sro9, toupper(rownames(sro9)))
 
 cl.annot <- c('1' = 'ILC3', '7' = 'TCs', '10' = 'ILC3')
@@ -226,9 +227,10 @@ genes <- Reduce(intersect, list(rownames(sro1), rownames(sro2), rownames(sro3),
                                 rownames(sro7), rownames(sro8), rownames(sro9)))
 genes.info <- sro1@assays$RNA@meta.features[genes, ]
 
-pref <- "results/"; dir.create(pref)
+pref.i <- "integrate-ILC3-TC-v5/"; dir.create(pref.i)
+pref <- paste0(pref.i, "cca/"); dir.create(pref)
 
-write.csv(genes.info, file = paste0(pref, "gene-info.csv"))
+write.csv(genes.info, file = paste0(pref.i, "gene-info.csv"))
 
 ## Run integration ####
 intg.anchors <- FindIntegrationAnchors(
@@ -247,6 +249,56 @@ sro.i <- ScaleData(sro.i, features = rownames(sro.i)) %>%
   RunPCA(features = rownames(sro.i), npcs = 50) %>%
   FindNeighbors(dims = 1:30, k.param = 30) %>%
   RunUMAP(dims = 1:30, n.neighbors = 30, metric = "cosine", min.dist = 0.4, spread = 1)
+
+sro.i$MtFrac_RNA_quant <- cut(sro.i$MtFrac_RNA,
+                              breaks=c(-Inf, summary(sro.i$MtFrac_RNA)['1st Qu.'], summary(sro.i$MtFrac_RNA)['Median'],
+                                       summary(sro.i$MtFrac_RNA)['3rd Qu.'], Inf),
+                              labels=c("0~25%","25~50%","50~75%", "75~100%"))
+
+## Final annotations ####
+kedmi.wang.cl.to.annot <- c(
+    'Kedmi C14' = 'LTi-like ILC3',
+    'Kedmi C12' = 'Ki67+ JC',
+    'Kedmi C6' = 'JC1',
+    'Kedmi C9' = 'JC2',
+    'Wang C13' = 'LTi-like ILC3',
+    'Wang C9' = 'Ki67+ JC',
+    'Wang C3' = 'JC1',
+    'Wang C12' = 'JC2'
+)
+
+sro.i$paper.annot <- ifelse(
+    test = sro.i$Cluster.prev %in% names(kedmi.wang.cl.to.annot),
+    yes = as.character(kedmi.wang.cl.to.annot[sro.i$Cluster.prev]),
+    no = sro.i$paper.annot
+)
+
+relabel.annot <- c(
+    ILC = "ILC3", ILC1 = "ILC3", ILC2 = "ILC3", ILC3 = "ILC3", ILC3p = "ILC3",
+    JC1 = "JC 1", JC2 = "JC 2", "Ki67+ JC" = "Ki67+", "Ki67+ TC" = "Ki67+ TC",
+    LTi = "ILC3", "LTi Variation 1" = "ILC3", "LTi Variation 2" = "ILC3",
+    "LTi Variation 3" = "ILC3", "LTi Variation 4" = "ILC3", "LTi Variation 5" = "ILC3",
+    "LTi Variation 6" = "ILC3", "LTi Variation 7" = "ILC3", "LTi Variation 8" = "ILC3",
+    "LTi-like ILC" = "ILC3", "LTi-like ILC3" = "ILC3", "LTi-like ILC3s" = "ILC3",
+    "LTi-like R-eTAC" = "LTi-like eTAC",
+    Mig_DC_1 = "other", "NCR+ ILC3" = "ILC3", Nrg1_Pos = "Nrg1+ / TC I",
+    "Pro. ILC" = "ILC3", "Pro. R-eTAC" = "Ki67+ eTAC",
+    "Proliferating NCR+ ILC3" = "ILC3", "Proliferating TC" = "Ki67+ TC",
+    "R-cDC1" = "other", "R-cDC2" = "other",
+    "R-eTAC1" = "R-eTAC1", "R-eTAC2" = "R-eTAC2", "R-eTAC3" = "R-eTAC3",
+    "R-mDC" = "other",
+    "RORgt DC I" = "RORgt DC I", "RORgt DC II" = "RORgt DC II",
+    "RORgt DC III" = "RORgt DC III", "RORgt DC IV" = "RORgt DC IV",
+    "T cell zone macs" = "other",
+    "TC 1" = "TC I", "TC 2" = "TC II", "TC 3" = "TC III", "TC 4" = "TC IV",
+    "TC I" = "TC I", "TC II" = "TC II", "TC III" = "TC III", "TC IV" = "TC IV",
+    "Tingible body macs" = "other", "Tolerogenic DC" = "TolDC", cDC2A = "other",
+    "eTACs I" = "eTAC I", "eTACs II" = "eTAC II", "early/transitional TC" = "early TC",
+    "na" = "other"
+)
+
+sro.i$annotations <- as.character(relabel.annot[sro.i@meta.data$paper.annot])
+sro.i$annotations <- factor(sro.i$annotations, levels = names(pal$annotations))
 
 ## Save results ####
 write.csv(sro.i@reductions$pca@cell.embeddings, file = paste0(pref, "PCA.csv"))
@@ -267,26 +319,14 @@ adata <- AnnData(
 write_h5ad(adata, paste0(pref, "unimputed-expr.h5ad"))
 
 # 3. plots ####
+pref.i <- "integrate-ILC3-TC-v5/"; dir.create(pref.i)
+reduction <- "cca"; pref <- paste0(pref.i, reduction, "/"); dir.create(pref)
 pref.p <- "plots/"; dir.create(pref.p, recursive = T)
 
-pal <- list(Clusters = c(
-  "#00bf00", "#489de8", "#d40663", "#f8c72f", "#077315",
-  "#785cd4", "#e67109", "#0eefff", "#f081e6", "#260691",
-  "#49709c", "#9e7d3f", "#bd537a", "#4e225c", "#f202ed",
-  "#fec55f", "#062e0b", "#9c6fa8", "#078d94", "#5c1a1a",
-  "#827c68", "#aebeff", "#9c2903", "#ffc5af", "#4f5715",
-  "#0249f0", "#f43525", "#0077ff", "#7f227e", "#dfddff",
-  "#7e85d7", "#fff64f", "#5fed0e", "#543018", "#f31220"
-  )
-)
+sro.i <- readRDS(paste0(pref, "SRO.rds"))
 
 ## QC ####
 # PCA QC
-sro.i$MtFrac_RNA_quant <- cut(sro.i$MtFrac_RNA,
-                              breaks=c(-Inf, summary(sro.i$MtFrac_RNA)['1st Qu.'], summary(sro.i$MtFrac_RNA)['Median'],
-                                       summary(sro.i$MtFrac_RNA)['3rd Qu.'], Inf),
-                              labels=c("0~25%","25~50%","50~75%", "75~100%"))
-
 raster_pdf(paste0(pref.p, 'pca-QC.pdf'), width = 15, height = 12, res = 150)
 plot.continuous.value(sro.i, idx = rownames(sro.i@meta.data), vis = sro.i@reductions$pca@cell.embeddings,
                       val = sro.i$nCount_RNA, val.name='nCount_RNA', point.size=1)
@@ -333,217 +373,117 @@ dev.off()
 
 ## group ####
 sources <- c(
-  "MLN_RORgt_MHCII_multiome", "TC_all_LN", "Colonna",
-  "Kedmi", "Lyu", "Wang",
-  "Littman", "Gardner.A", "Gardner.E"
-)
-
-pal$source <- pal$Clusters[1:length(sources)]
-names(pal$source) <- sources
-sro.i$source <- sro.i$orig.ident
-
-####
-pl <- list()
-p1 <- plot.clusters(sro.i, groups = sro.i$source, clusters.col = 'source', pref.C = F,
-                    col = pal$source, point.size = 1, point.alpha = 0.5, labels = F, label.size = 7,
-                    label.pad = 1) + guides(colour = guide_legend(override.aes = list(size=5)))
-pl[[1]] <- p1
-for (i in 1:length(sources)){
-  source.curr <- sources[i]
-  p2 <- plot.clusters.highlight.one(SRO = sro.i, 
-                                    idx1 = colnames(sro.i), idx2 = sro.i$source == source.curr, 
-                                    groups = sro.i$source, clusters.col = 'source', labels = F, label.size = 7,
-                                    col = pal$source, pref.C = F)
-  pl[[i+1]] <- p2
-}
-ncols <- 3
-nrows <- ceiling(length(pl)/ncols)
-raster_pdf(file = paste0(pref.p, "UMAP-source.pdf"), width = 8*ncols, height = 6*nrows, res = 150)
-plot_grid(plotlist = pl, ncol = ncols)
-dev.off()
-
-####
-group.name <- 'sample'
-groups <- sort(unique(sro.i@meta.data[[group.name]]))
-
-sources <- c(
     "MLN_RORgt_MHCII_multiome", "TC_all_LN", "Colonna",
-    "Kedmi", "Lyu", "Wang",
-    "Littman", "Gardner.A", "Gardner.E"
+    "Kedmi", "Wang", "Littman", 
+    "Lyu", "Gardner.A", "Gardner.E"
 )
 
+titles <- c(
+    "Akagbosu et al. 2022 - 2w", "Cabric et al. 2025 - 2w", "Rodrigues et al. 2025 - 2w",
+    "Kedmi et al. 2022 - 4w-adult", "Wang et al. 2021 - 4w", "Fu et al. 2025 - 3w",
+    "Lyu et al. 2022 - adult", "Sun et al. 2025 - adult", "Sun et al. 2025 - 2w"
+)
+
+## annotations
+group.name <- "annotations"
 pl <- list()
 for (i in 1:length(sources)){
     source.curr <- sources[i]
+    title <- titles[i]
+    pal.curr <- if (source.curr == "Lyu") pal$lyu else pal[[group.name]]
     p.curr <- plot.clusters.highlight.one(
         SRO = sro.i,
         idx1 = colnames(sro.i), idx2 = sro.i$orig.ident == source.curr,
         groups = get.named.vector.sro(sro.i, group.name),
         clusters.col = source.curr,
         labels = F, label.size = 5,
-        col = pal[[group.name]], pref.C = F) + guides(colour = guide_legend(override.aes = list(size=5), ncol = 1))
+        col = pal.curr, pref.C = F) + guides(colour = guide_legend(title = NULL,
+                                                                   label.theme = element_text(size = 14), 
+                                                                   override.aes = list(size=4), ncol = 1)) +
+        theme(axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank(), axis.line = element_blank(),
+              plot.title = element_text(size = 21, hjust = 0.5, vjust = -2.5), legend.text.align = 0,
+              legend.position = 'right', legend.box.margin = margin(l = -30, t = 0, b = 0, r = 0)) + ggtitle(title)
+    
+    if (source.curr == "Colonna"){
+        p.curr <- p.curr + scale_color_manual(
+            values = c("RORgt DC I" = stepped2()[16], "RORgt DC II" = stepped2()[15], "RORgt DC III" = stepped2()[14], "RORgt DC IV" = stepped2()[13], 
+                       'ILC3' = "#14a38e"),
+            labels = c(expression("ROR" * gamma * "t DC I"), expression("ROR" * gamma * "t DC II"), 
+                       expression("ROR" * gamma * "t DC III"), expression("ROR" * gamma * "t DC IV"),
+                       'ILC3')
+        )
+    }
+    
+    
     pl[[i]] <- p.curr
 }
 
-ncols <- if (length(pl)>3) 3 else 2
+ncols <- 3
 nrows <- ceiling(length(pl)/ncols)
 
-pdf(file = paste0(pref.p, "UMAP-", group.name, ".pdf"), width = 10*ncols, height = 6*nrows)
+raster_pdf(file = paste0(pref.p, "UMAP-annotations.pdf"), width = 7.5*ncols, height = 5*nrows, res = 300)
 plot_grid(plotlist = pl, ncol = ncols, align = 'hv')
 dev.off()
 
-res0.4.to.anno <- c('Colonna C7' = 'RORgt DC I', 'Colonna C5' = 'RORgt DC II', 'Colonna C9' = 'RORgt DC III', 'Colonna C10' = 'RORgt DC IV', 'Colonna C0' = 'ILC3')
-
-sro.i@meta.data[sro.i@meta.data$orig.ident == 'Colonna',]$paper.annot <- res0.4.to.anno[sro.i@meta.data[sro.i@meta.data$orig.ident == 'Colonna',]$Cluster.prev]
-
-## 3.1 final annot ####
-gardner.e.md <- read.csv("../oral-tolerance-Gardner/Seurat/early/meta-data.csv", row.names = 1)
-gardner.e.md <- gardner.e.md %>% subset(RNA_snn_res.0.2 %in% c(1, 7, 10))
-rownames(gardner.e.md) <- paste0(rownames(gardner.e.md), "_9")
-gardner.e.md$paper.annot[is.na(gardner.e.md$paper.annot)] <- 'na'
-
-sro.i@meta.data[sro.i@meta.data$orig.ident == 'Gardner.E',]$paper.annot <- gardner.e.md[rownames(sro.i@meta.data[sro.i@meta.data$orig.ident == 'Gardner.E',]), ]$paper.annot
-
-kedmi.wang.cl.to.annot <- c(
-  'Kedmi C14' = 'LTi-like ILC3',
-  'Kedmi C12' = 'Ki67+ JC',
-  'Kedmi C6' = 'JC1',
-  'Kedmi C9' = 'JC2',
-  'Wang C13' = 'LTi-like ILC3',
-  'Wang C9' = 'Ki67+ JC',
-  'Wang C3' = 'JC1',
-  'Wang C12' = 'JC2'
-)
-
-sro.i$paper.annot <- ifelse(
-  test = sro.i$Cluster.prev %in% names(kedmi.wang.cl.to.annot),
-  yes = as.character(kedmi.wang.cl.to.annot[sro.i$Cluster.prev]),
-  no = sro.i$paper.annot
-)
-
-table(sro.i$paper.annot)[table(sro.i$paper.annot) < 20]
-
-annot1.to.annot3 <- c(
-  "ILC3" = "ILC3",
-  "ILC3p" = "ILC3",
-  "Ki67+ TC" = "Ki67+ TC",
-  "LTi" = "ILC3", 
-  "LTi Variation 1" = "ILC3", "LTi Variation 2" = "ILC3",
-  "LTi Variation 3" = "ILC3", "LTi Variation 4" = "ILC3",
-  "LTi Variation 5" = "ILC3", "LTi Variation 6" = "ILC3",
-  "LTi Variation 7" = "ILC3", "LTi Variation 8" = "ILC3",
-  "LTi-like ILC" = "ILC3", "LTi-like ILC3s" = "ILC3",
-  'LTi-like ILC3' = 'ILC3',
-  "LTi-like R-eTAC" = "LTi-like eTAC",
-  "NCR+ ILC3" = "ILC3",
-  "Nrg1_Pos" = "Nrg1_Pos",
-  "Pro. ILC" = "ILC3",
-  "Pro. R-eTAC" = "Ki67+ eTAC",
-  "Proliferating NCR+ ILC3" = "ILC3",
-  "Proliferating TC" = "Ki67+ TC",
-  "R-eTAC1" = "eTAC I",
-  "R-eTAC2" = "eTAC II", 
-  "R-eTAC3" = "eTAC III",
-  "TC 1" = "TC I", "TC 2" = "TC II", "TC 3" = "TC III", "TC 4" = "TC IV",
-  "TC I" = "TC I", "TC II" = "TC II", "TC III" = "TC III", "TC IV" = "TC IV",
-  "eTACs I" = "eTAC I",
-  "eTACs II" = "eTAC II",
-  "ILC" = "ILC3", "ILC1" = "ILC3", "ILC2" = "ILC3",
-  
-  "na" = "other",
-  
-  "Tingible body macs" = "other",
-  "T cell zone macs" = "other",
-  "Mig_DC_1" = "other", 
-  "R-cDC1" = "other", 
-  "R-cDC2" = "other",
-  "cDC2A" = "other",
-  "R-mDC" = "other"
-)
-
-sro.i$paper.annot3 <- ifelse(
-  test = sro.i$paper.annot %in% names(annot1.to.annot3),
-  yes = as.character(annot1.to.annot3[sro.i$paper.annot]),
-  no = sro.i$paper.annot
-)
-
-## 3.3 final annot - from here ####
-group.name <- 'paper.annot3'
-groups <- sort(unique(sro.i@meta.data[[group.name]]))
-
-pal$paper.annot3 <-c(
-  "Ki67+ TC" = "#e051bc",
-  "early/transitional TC" = "#ccf3ff",
-  "TC I" = "#D790FF", "TC II" = "#BC23FF", "TC III" = "#72418F", "TC IV" = "#3A2465",
-  
-  # Colonna
-  "RORgt DC I" = stepped2()[16], "RORgt DC II" = stepped2()[15], "RORgt DC III" = stepped2()[14], "RORgt DC IV" = stepped2()[13],
-  
-  # Kedmi Wang Littman
-  "Ki67+ JC" = "#e051bc",
-  "JC1" = stepped3()[3], "JC2" = '#08519c', 
-  "Nrg1_Pos" = stepped3()[3], "Tolerogenic DC" = '#08519c',
-  
-  # Gardner
-  "Ki67+ eTAC" = "#e051bc", 
-  "LTi-like eTAC" = stepped3()[7],
-  "eTAC I" = stepped3()[8], "eTAC II" = stepped3()[6], "eTAC III" = stepped3()[5],
-  
-  "ILC3" = "#14a38e",
-  
-  "na" = 'darkgray',
-  'other' = '#bdbdbd'
-)
-
-# Lyu 
-pal$lyu <- c("eTAC I" = stepped2()[11], "eTAC II" = stepped2()[9], "ILC3" = "#14a38e")
-
-sro.i$paper.annot3 <- factor(sro.i$paper.annot3, levels = names(pal$paper.annot3))
-sources <- c(
-  "MLN_RORgt_MHCII_multiome", "TC_all_LN", "Colonna",
-  "Kedmi", "Wang", "Littman", 
-  "Lyu", "Gardner.A", "Gardner.E"
-)
+## sample
+group.name <- 'sample'
 
 pl <- list()
 for (i in 1:length(sources)){
-  source.curr <- sources[i]
-  pal.curr <- if (source.curr == "Lyu") pal$lyu else pal[[group.name]]
-  p.curr <- plot.clusters.highlight.one(
-    SRO = sro.i,
-    idx1 = colnames(sro.i), idx2 = sro.i$orig.ident == source.curr,
-    groups = get.named.vector.sro(sro.i, group.name),
-    clusters.col = source.curr,
-    labels = F, label.size = 5,
-    col = pal.curr, pref.C = F) + guides(colour = guide_legend(override.aes = list(size=5), ncol = 1))
-  pl[[i]] <- p.curr
+    source.curr <- sources[i]
+    title <- titles[i]
+    pal.curr <- pal[[group.name]]
+    p.curr <- plot.clusters.highlight.one(
+        SRO = sro.i,
+        idx1 = colnames(sro.i), idx2 = sro.i$orig.ident == source.curr,
+        groups = get.named.vector.sro(sro.i, group.name),
+        clusters.col = source.curr,
+        labels = F, label.size = 5,
+        col = pal.curr, pref.C = F) + guides(colour = guide_legend(title = NULL,
+                                                                   label.theme = element_text(size = 14), 
+                                                                   override.aes = list(size=4), ncol = 1)) +
+        theme(axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank(), axis.line = element_blank(),
+              plot.title = element_text(size = 21, hjust = 0.5, vjust = -2.5), legend.text.align = 0,
+              legend.position = 'right', legend.box.margin = margin(l = -30, t = 0, b = 0, r = 0)) + ggtitle(title)
+    
+    pl[[i]] <- p.curr
 }
 
-source.curr <- 'Gardner.A'
-p.curr1 <- plot.clusters.highlight.one(
-  SRO = sro.i,
-  idx1 = colnames(sro.i), idx2 = sro.i$orig.ident == source.curr,
-  groups = get.named.vector.sro(sro.i, 'sample'),
-  clusters.col = source.curr,
-  labels = F, label.size = 5,
-  col = pal$gardner.sample, pref.C = F) + guides(colour = guide_legend(override.aes = list(size=5), ncol = 1))
-
-source.curr <- 'Gardner.E'
-p.curr2 <- plot.clusters.highlight.one(
-  SRO = sro.i,
-  idx1 = colnames(sro.i), idx2 = sro.i$orig.ident == source.curr,
-  groups = get.named.vector.sro(sro.i, 'sample'),
-  clusters.col = source.curr,
-  labels = F, label.size = 5,
-  col = pal$gardner.sample, pref.C = F) + guides(colour = guide_legend(override.aes = list(size=5), ncol = 1))
-
-pl[[10]] <- p.curr1
-pl[[11]] <- p.curr2
-
-ncols <- if (length(pl)>3) 3 else 2
+ncols <- 3
 nrows <- ceiling(length(pl)/ncols)
 
-pdf(file = paste0(pref.p, "UMAP-", group.name, "-Gardner-sample.pdf"), width = 10*ncols, height = 6*nrows)
+raster_pdf(file = paste0(pref.p, "UMAP-sample.pdf"), width = 8.5*ncols, height = 5*nrows, res = 300)
 plot_grid(plotlist = pl, ncol = ncols, align = 'hv')
 dev.off()
 
+## data source
+pl <- list()
+pl[[1]] <- plot.clusters(sro.i, groups = sro.i$orig.ident, clusters.col = 'source', pref.C = F,
+                    col = pal$source, point.size = 1, point.alpha = 0.5, labels = F, label.size = 7,
+                    label.pad = 1) + guides(colour = guide_legend(override.aes = list(size=5))) +
+    theme(axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank(), axis.line = element_blank())
+
+for (i in 1:length(sources)){
+    source.curr <- sources[i]
+    title <- titles[i]
+    p.curr <- plot.clusters.highlight.one(
+        SRO = sro.i,
+        idx1 = colnames(sro.i), idx2 = sro.i$orig.ident == source.curr,
+        groups = get.named.vector.sro(sro.i, "orig.ident"),
+        clusters.col = source.curr,
+        labels = F, label.size = 5,
+        col = pal$source, pref.C = F) + guides(colour = guide_legend(title = NULL,
+                                                                   label.theme = element_text(size = 14), 
+                                                                   override.aes = list(size=4), ncol = 1)) +
+        theme(axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank(), axis.line = element_blank(),
+              plot.title = element_text(size = 21, hjust = 0.5, vjust = -2.5), legend.text.align = 0,
+              legend.position = 'right', legend.box.margin = margin(l = -30, t = 0, b = 0, r = 0)) + ggtitle(title)
+    
+    pl[[i+1]] <- p.curr
+}
+
+ncols <- 3
+nrows <- ceiling(length(pl)/ncols)
+raster_pdf(file = paste0(pref.p, "UMAP-source.pdf"), width = 9*ncols, height = 6*nrows, res = 300)
+plot_grid(plotlist = pl, ncol = ncols, align = 'hv')
+dev.off()

@@ -1,4 +1,3 @@
-*.rds
 *.csv
 
 .vscode/
@@ -6,6 +5,7 @@
 *.DS_Store
 # Data files
 *.rds
+!palette.rds
 *.h5
 *.h5ad
 *.ipynb_checkpoints

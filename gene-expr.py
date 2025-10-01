@@ -56,7 +56,7 @@ def plot_gene_expr_grayout(expr, vis, vis2, dim1, dim2, genes, file, n_cols, fig
     return 0
 
 
-pref = 'integrate'
+pref = 'integrate-ILC3-TC-v5/cca'
 plotDir = 'plots/gene-expr'
 os.makedirs(plotDir, exist_ok = True)
 
@@ -67,7 +67,7 @@ adata = ad.read_h5ad(os.path.join(pref, 'unimputed-expr.h5ad'))
 unimp_df = pd.DataFrame(adata.X.toarray(), index=adata.obs_names, columns = adata.var_names)
 genes = unimp_df.columns
 
-geneLists = [["AIRE", 'RORC', 'H2-AB1', 'CXCR6', 'PRDM16', 'NCAM1', "ITGB8"]]
+geneLists = [["AIRE", 'RORC', 'H2-AB1', 'CXCR6']]#, 'PRDM16']], 'NCAM1', "ITGB8"]]
 
 # unimputed
 ci = md.index
