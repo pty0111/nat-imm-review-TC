@@ -29,7 +29,7 @@ The datasets used in this repo are available at the following locations:
 | Wang                     | GSE176282                             | <https://www.science.org/doi/10.1126/sciimmunol.abl5053>              |
 | Littman                  | <https://zenodo.org/records/15212000> | <https://www.nature.com/articles/s41586-025-08982-4>                  |
 | Lyu                      | GSE184175                             | <https://www.nature.com/articles/s41586-022-05141-x>                  |
-| Gardner.A                | GSE273746                             | <https://doi.org/10.1084/jem.20250573>                                |
-| Gardner.E                | GSE285182                             | <https://doi.org/10.1084/jem.20250573>                                |
+| Gardner Adult                | GSE273746                             | <https://doi.org/10.1084/jem.20250573>                                |
+| Gardner Early                | GSE285182                             | <https://doi.org/10.1084/jem.20250573>                                |
 
 The results of integration including Seurat R object are available at [Box](https://mskcc.box.com/s/0z5mdy8e1zkmo4m5prj56hjcgse9l0ya).
