@@ -31,7 +31,7 @@ source("utils.R")
 # 1. Load SROs ####
 # ############################################################################ #
 ## MLN_RORgt ####
-sro1 <- readRDS("../GSE205066-MLN_RORgt_MHCII_multiome-Brown/Seurat/results/SRO.rds")
+sro1 <- readRDS("../MLN_RORgt_MHCII_multiome-Brown/Seurat/results/SRO.rds")
 sro1$MtFrac_RNA <- sro1$percent.MT
 
 sro1@assays$RNA@meta.features$symbol.unique <- make.unique(sro1@assays$RNA@meta.features$Symbol)
@@ -51,7 +51,7 @@ sro1$paper.annot <- sro1$Cluster.annot
 Idents(sro1) <- sro1$Cluster.prev
 
 ## Kedmi ####
-sro2 <- readRDS("../GSE200148-kedmi-2022/results/SRO.rds")
+sro2 <- readRDS("../kedmi-2022/results/SRO.rds")
 sro2$MtFrac_RNA <- sro2$percent.MT
 sro2$sample <- sro2$Sample
 
@@ -71,7 +71,7 @@ sro2$paper.annot <- sro2$Cluster.annot
 Idents(sro2) <- sro2$Cluster.prev
 
 ## Wang ####
-sro3 <- readRDS("../GSE176282-wang-2021/results/SRO.rds")
+sro3 <- readRDS("../wang-2021/results/SRO.rds")
 sro3$MtFrac_RNA <- sro3$percent.MT
 sro3$sample <- sro3$Sample
 
@@ -91,7 +91,7 @@ sro3$paper.annot <- sro3$Cluster.annot
 Idents(sro3) <- sro3$Cluster.prev
 
 ## Lyu ####
-sro4 <- readRDS("../GSE184175-lyu-2022/results/SRO.rds")
+sro4 <- readRDS("../lyu-2022/results/SRO.rds")
 s.genes <- rownames(sro4)[toupper(rownames(sro4)) %in% toupper(cc.genes.updated.2019$s.genes)]
 g2m.genes <- rownames(sro4)[toupper(rownames(sro4)) %in% toupper(cc.genes.updated.2019$g2m.genes)]
 sro4 <- CellCycleScoring(sro4, s.features = s.genes, g2m.features = g2m.genes, set.ident = F)
@@ -111,7 +111,7 @@ sro4$paper.annot <- sro4$Cluster.annot
 Idents(sro4) <- sro4$Cluster.prev
 
 ## TC_all_LN ####
-sro5 <- readRDS("../GSE294005-TC_all_LN-Brown/results/SRO.rds")
+sro5 <- readRDS("../TC_all_LN-Brown/results/SRO.rds")
 sro5$MtFrac_RNA <- sro5$percent.MT
 sro5 <- sro5 %>% subset(Clusters2 %in% c(1:7)) %>%
   NormalizeData() %>% FindVariableFeatures(nfeatures = 5000) %>%
@@ -124,7 +124,7 @@ sro5$paper.annot <- sro5$Cluster.annot
 Idents(sro5) <- sro5$Cluster.prev
 
 ## oral tolerance Colonna ####
-sro6 <- readRDS("../GSE289268-oral-tolerance-Colonna/Seurat/merged-4I/SRO.rds")
+sro6 <- readRDS("../oral-tolerance-Colonna/Seurat/merged-4I/SRO.rds")
 sro6 <- RenameGenesSeurat(sro6, toupper(rownames(sro6)))
 
 cl.annot <- c('5' = 'TC II', '7' = 'TC I', '9' = 'TC III', '10' = 'TC IV', '0' = 'ILC3')
@@ -143,7 +143,7 @@ sro6$paper.annot <- sro6$Cluster.annot
 Idents(sro6) <- sro6$Cluster.prev
 
 ## oral tolerance Littman ####
-sro7 <- readRDS("../zenodo-15212000-oral-tolerance-Littman-oral-tolerance-Littman/Seurat/merged/SRO.rds")
+sro7 <- readRDS("../oral-tolerance-Littman-oral-tolerance-Littman/Seurat/merged/SRO.rds")
 sro7 <- RenameGenesSeurat(sro7, toupper(rownames(sro7)))
 sro7$RabiClusters[is.na(sro7$RabiClusters)] <- 'na'
 
@@ -164,7 +164,7 @@ Idents(sro7) <- sro7$Cluster.prev
 
 ## oral tolerance Gardner ####
 ### adult
-sro8 <- readRDS("../GSE273746-GSE285182-oral-tolerance-Gardner-oral-tolerance-Gardner/Seurat/adult/SRO.rds")
+sro8 <- readRDS("../oral-tolerance-Gardner-oral-tolerance-Gardner/Seurat/adult/SRO.rds")
 sro8 <- RenameGenesSeurat(sro8, toupper(rownames(sro8)))
 sro8$paper.annotations[is.na(sro8$paper.annotations)] <- 'na'
 
@@ -184,7 +184,7 @@ sro8$paper.annot <- sro8$paper.annotations
 Idents(sro8) <- sro8$Cluster.prev
 
 ### early life
-sro9 <- readRDS("../GSE273746-GSE285182-oral-tolerance-Gardner-oral-tolerance-Gardner/Seurat/early/SRO.rds")
+sro9 <- readRDS("../oral-tolerance-Gardner-oral-tolerance-Gardner/Seurat/early/SRO.rds")
 sro9 <- RenameGenesSeurat(sro9, toupper(rownames(sro9)))
 
 cl.annot <- c('1' = 'ILC3', '7' = 'TCs', '10' = 'ILC3')
@@ -227,7 +227,7 @@ genes <- Reduce(intersect, list(rownames(sro1), rownames(sro2), rownames(sro3),
                                 rownames(sro7), rownames(sro8), rownames(sro9)))
 genes.info <- sro1@assays$RNA@meta.features[genes, ]
 
-pref.i <- "integrate-ILC3-TC-v5/"; dir.create(pref.i)
+pref.i <- "integrate/"; dir.create(pref.i)
 pref <- paste0(pref.i, "cca/"); dir.create(pref)
 
 write.csv(genes.info, file = paste0(pref.i, "gene-info.csv"))
@@ -319,7 +319,7 @@ adata <- AnnData(
 write_h5ad(adata, paste0(pref, "unimputed-expr.h5ad"))
 
 # 3. plots ####
-pref.i <- "integrate-ILC3-TC-v5/"; dir.create(pref.i)
+pref.i <- "integrate/"; dir.create(pref.i)
 reduction <- "cca"; pref <- paste0(pref.i, reduction, "/"); dir.create(pref)
 pref.p <- "plots/"; dir.create(pref.p, recursive = T)
 
